@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Prompt Workspace Editor - ALGorith TechBook</title>
+  
+  <!-- Tailwind CSS Engine Core Library Hook -->
+  <script src="https://tailwindcss.com"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              light: '#D26938',       // Bright Accent Rust
+              DEFAULT: '#C85A28',     // Darker Core Sienna
+              muted: '#E2875D',       // Highlight Text Tint
+            },
+            ui: {
+              bg: '#0D0D0D',          // Onyx Canvas Grounding
+              surface: '#141416',     // Card Surface Blocks
+              border: '#27272A',      // Division Framework Borders
+            }
+          },
+          fontFamily: {
+            serif: ['Georgia', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* 🖨️ Absolute Overrides for System Paper/PDF Printing */
+    @media print {
+      body {
+        background-color: #FFFFFF !important;
+        color: #111111 !important;
+        padding: 0 !important;
+      }
+      .no-print, .editor-panel-controls, button, textarea {
+        display: none !important; /* Wipes out UI management widgets entirely */
+      }
+      .print-target-wrapper {
+        background-color: #FFFFFF !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      h1, h2, h3 {
+        color: #000000 !important;
+        page-break-after: avoid;
+      }
+      h1 span, .brand-accent-text {
+        color: #C85A28 !important;
+      }
+      .prompt-card-box {
+        background-color: #F8F9FA !important;
+        border: 1px solid #71717A !important;
+        color: #000000 !important;
+        page-break-inside: avoid;
+        white-space: pre-wrap !important;
+      }
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: avoid;
+      }
+      th {
+        background-color: #E4E4E7 !important;
+        color: #000000 !important;
+      }
+      td, th {
+        border: 1px solid #A1A1AA !important;
+        padding: 8px !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-ui-bg text-zinc-400 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- Application Navbar Control Bar (Hidden on Print) -->
+  <header class="no-print w-full bg-ui-surface border-b border-ui-border p-4 flex items-center justify-between z-50">
+    <div class="flex items-center gap-3">
+      <span class="text-xl">🛠️</span>
+      <div>
+        <h1 class="text-white font-bold text-sm leading-tight tracking-wide uppercase">ALGorith TechBook Studio</h1>
+        <p class="text-[10px] text-zinc-500 font-medium tracking-tight">Active Designer Node • Engineered by AK Gupta</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="window.print()" class="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold px-4 py-2 rounded-lg border border-zinc-700 transition-all">
+        🖨️ Save as PDF
+      </button>
+      <button onclick="triggerPackageDownload()" class="bg-brand hover:bg-brand-light text-white text-xs font-bold px-4 py-2 rounded-lg transition-all shadow-lg shadow-brand/20">
+        💾 Export Static HTML File
+      </button>
+    </div>
+  </header>
+
+  <!-- Split Screen Editor + Previewer Canvas Wrapper -->
+  <main class="flex-1 flex flex-col lg:flex-row w-full overflow-hidden">
+    
+    <!-- LEFT SIDE: Live Raw Source Document Code Input Pane (Hidden on Print) -->
+    <section class="no-print w-full lg:w-1/2 bg-[#080809] border-r border-ui-border flex flex-col p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <label for="markup-editor-area" class="text-xs font-bold text-zinc-400 tracking-wider uppercase">Live Layout Editor Code Source</label>
+        <span class="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-mono">index.html</span>
+      </div>
+      <textarea id="markup-editor-area" oninput="compileRealtimeViewport()" class="flex-1 w-full bg-black border border-ui-border rounded-xl p-4 font-mono text-xs text-brand-muted focus:outline-none focus:border-brand/60 resize-none leading-relaxed transition-all tab-size-2"></textarea>
+    </section>
+
+    <!-- RIGHT SIDE: Live Execution Viewport Panel Rendering Wrapper -->
+    <section class="w-full lg:w-1/2 bg-ui-bg p-4 md:p-8 overflow-y-auto flex justify-center items-start">
+      <iframe id="live-render-frame" class="print-target-wrapper w-full max-w-3xl min-h-[750px] bg-ui-surface border border-ui-border rounded-2xl shadow-2xl p-0 transition-all"></iframe>
+    </section>
+
+  </main>
+
+  <!-- Initialization & Interactive Compiling Function Modules Script -->
+  <script>
+    // System Master Template Content Payload mapping layout visual variables 
+    const initialDocumentPayload = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://tailwindcss.com"><\/script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { light: '#D26938', DEFAULT: '#C85A28', muted: '#E2875D' },
+            ui: { bg: '#0D0D0D', surface: '#141416', border: '#27272A' }
+          },
+          fontFamily: { serif: ['Georgia', 'serif'], sans: ['Inter', 'sans-serif'] }
+        }
+      }
+    }
+  <\/script>
+</head>
+<body class="bg-ui-surface text-zinc-400 p-6 md:p-10 font-sans">
+  <header class="border-b border-ui-border pb-6 mb-8">
+    <div class="inline-block bg-brand/10 border border-brand/20 px-2.5 py-0.5 rounded text-[10px] font-bold text-brand-muted uppercase tracking-wider mb-3">📖 ALGorith TechBook Portfolio</div>
+    <h1 class="text-3xl font-light text-white font-serif">UI Repair Studio: <span class="italic text-brand-muted font-normal">System Prompts<\/span></h1>
+    <div class="text-[11px] text-zinc-500 mt-1">Compiled by AK Gupta • Framework Blueprint System Matrix</div>
+  </header>
+
+  <section class="mb-8">
+    <h2 class="text-lg font-serif text-white border-l-2 border-brand pl-2.5 mb-4">1. Grounded Design Matrix Tokens</h2>
+    <table class="w-full text-left text-xs border border-ui-border rounded-lg overflow-hidden">
+      <thead class="bg-zinc-900 text-white">
+        <tr><th class="p-3">Token Name</th><th class="p-3">Hex Registry</th><th class="p-3">UI Role</th></tr>
+      </thead>
+      <tbody class="divide-y divide-ui-border bg-black/10">
+        <tr><td class="p-3 font-semibold text-zinc-200">Primary Accent</td><td class="p-3 font-mono text-brand-muted">#D26938</td><td class="p-3 text-zinc-400">Header visual indicators</td></tr>
+        <tr><td class="p-3 font-semibold text-zinc-200">Secondary Base</td><td class="p-3 font-mono text-brand">#C85A28</td><td class="p-3 text-zinc-400">Solid CTA container highlights</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2 class="text-lg font-serif text-white border-l-2 border-brand pl-2.5 mb-4">2. AI Studio Multimodal Repair Prompt</h2>
+    <div class="prompt-card-box bg-black/40 border border-dashed border-brand/30 rounded-xl p-4 font-mono text-xs text-zinc-300 leading-relaxed">You are an elite Frontend UI Engineer analyzing code vs visual target screenshots. Adjust the component architecture layout utilizing strict parameters:\\n\\n1. Palette Realism: Clamp background rendering to custom Onyx (#0D0D0D). Use Primary Rust (#D26938) exclusively on structural elements requiring visual importance weights.\\n2. Typography Hierarchy: Build a clear font scale combination. Alternate explicitly between lightweight geometric Sans-Serif tracking and smooth Editorial Serif italics.</div>
+  </section>
+</body>
+</html>`;
+
+    // Inject base script arrays into workspace elements upon immediate viewport assembly
+    const textEditorCanvas = document.getElementById("markup-editor-area");
+    textEditorCanvas.value = initialDocumentPayload;
+
+    function compileRealtimeViewport() {
+      const liveRenderFrame = document.getElementById("live-render-frame");
+      const activeCodeString = textEditorCanvas.value;
+      
+      // Inject source text strings directly inside client frames safely
+      const frameBlob = new Blob([activeCodeString], { type: "text/html;charset=utf-8;" });
+      liveRenderFrame.src = URL.createObjectURL(frameBlob);
+    }
+
+    function triggerPackageDownload() {
+      const runtimeStringContent = textEditorCanvas.value;
+      const cleanBlob = new Blob([runtimeStringContent], { type: "text/html;charset=utf-8;" });
+      const virtualLink = document.createElement("a");
+      
+      virtualLink.href = URL.createObjectURL(cleanBlob);
+      virtualLink.download = "index.html";
+      document.body.appendChild(virtualLink);
+      
+      virtualLink.click();
+      document.body.removeChild(virtualLink);
+    }
+
+    // Initialize immediate layout compilation sequence on runtime instantiation
+    compileRealtimeViewport();
+  </script>
+</body>
+</html>
